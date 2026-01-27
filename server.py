@@ -33,5 +33,6 @@ def tts():
         return str(e), 500
 
 if __name__ == '__main__':
-    print("Starting python TTS server on port 5000...")
-    app.run(host='0.0.0.0', port=5000)
+    from waitress import serve
+    print("Starting production TTS server on port 5000...")
+    serve(app, host='0.0.0.0', port=5000)
