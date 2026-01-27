@@ -1,4 +1,4 @@
-const SERVER_URL = "http://localhost:5000/tts";
+const SERVER_URL = "/tts";
 
 class CustomEdgeTTS {
     constructor(text, voice) {
