@@ -1,0 +1,4 @@
+<This program is currently in beta version!>
+skyfocus.cloud is a simulation service that lets you feel like you're traveling while studying.
+Increase your focus by flying to various cities around the world.
+We provide realistic video and audio guides during your flight.

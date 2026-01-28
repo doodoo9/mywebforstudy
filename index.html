@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Study Flight</title>
+    <title>studyfocus</title>
     <link rel="stylesheet" href="style.css">
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
@@ -82,21 +82,80 @@
 </head>
 
 <body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <h1>SKYFOCUS</h1>
+            <div class="loading-bar-container">
+                <div class="loading-bar" id="loading-bar"></div>
+            </div>
+            <div class="loading-text" id="loading-text">initializing...</div>
+        </div>
+    </div>
+
     <div id="map-view"
-        style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; display: none;"></div>
-    <div id="cesiumContainer" style="width: 100vw; height: 100vh;"></div>
+        style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; opacity: 0; pointer-events: none; transition: opacity 0.5s ease;">
+    </div>
+    <div id="cesiumContainer" style="width: 100vw; height: 100vh; transition: opacity 0.5s ease;"></div>
     <!-- <div id="static-plane-overlay"> Removed for 3D Overlay </div> -->
 
     <!-- UI Overlay -->
     <div class="ui-overlay">
         <div id="top-bar">
-            <div class="logo">
-                <i class="fa-solid fa-paper-plane"></i>
-                <span>Study Flight</span>
+            <div id="menu-btn" class="menu-btn">
+                <i class="fa-solid fa-bars"></i>
             </div>
+        </div>
 
-            <div id="lang-toggle" class="status-badge" style="cursor: pointer;">
-                <span class="active-lang">KR</span> / <span class="inactive-lang">EN</span>
+        <!-- Menu Drawer -->
+        <div id="menu-overlay" class="hidden"></div>
+        <div id="menu-drawer" class="menu-drawer hidden">
+            <div class="menu-header">
+                <div class="logo">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>skyfocus.cloud</span>
+                </div>
+                <div id="menu-close-btn" class="menu-close-btn">
+                    <i class="fa-solid fa-xmark"></i>
+                </div>
+            </div>
+            <div class="menu-items">
+                <div class="menu-item" id="menu-about">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span data-i18n="menu_about">About</span>
+                </div>
+                <div class="menu-item" id="menu-changes">
+                    <i class="fa-solid fa-list-ul"></i>
+                    <span data-i18n="menu_changes">Changes</span>
+                </div>
+            </div>
+            <div class="menu-footer">
+                <div id="drawer-lang-toggle" class="drawer-lang-toggle">
+                    <span class="lang-opt" data-lang="kr">한국어</span>
+                    <span class="divider">|</span>
+                    <span class="lang-opt" data-lang="en">English</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modals for Menu Items -->
+        <div id="modal-about" class="modal-overlay hidden">
+            <div class="modal-content info-modal">
+                <h2 data-i18n="menu_about">About</h2>
+                <div class="modal-body" id="about-content">
+                    <!-- Dynamic Content -->
+                </div>
+                <button class="close-modal-btn primary-btn">Close</button>
+            </div>
+        </div>
+
+        <div id="modal-changes" class="modal-overlay hidden">
+            <div class="modal-content info-modal wide-modal">
+                <h2 data-i18n="menu_changes">Changes</h2>
+                <div class="modal-body" id="changelog-content">
+                    <!-- Dynamic Content -->
+                </div>
+                <button class="close-modal-btn primary-btn">Close</button>
             </div>
         </div>
 
@@ -140,11 +199,20 @@
                     <div class="time-big">
                         <i class="fa-regular fa-clock"></i> <span id="real-time-display">--:--:--</span>
                     </div>
+                    <!-- Follow Button Moved Here -->
+                    <button id="btn-follow-setup" class="map-corner-btn-bl" title="비행기 추적">
+                        <i class="fa-solid fa-location-crosshairs"></i>
+                    </button>
+                    <!-- View Toggle Button Moved Here -->
+                    <button id="view-toggle-setup" class="map-corner-btn" title="지도/지구본 전환">
+                        <i class="fa-solid fa-map"></i>
+                    </button>
                 </div>
 
                 <!-- Integrated Flight Controls (Mini Bar) -->
                 <div id="integrated-controls" class="integrated-controls hidden">
-                    <button id="view-toggle" class="mini-btn" title="지도/지구본 전환">
+                    <button id="view-toggle" class="mini-btn hidden" title="지도/지구본 전환">
+                        <!-- This original button is hidden/removed in favor of the corner buttons, keeping ID for reference if needed or using new logic -->
                         <i class="fa-solid fa-map"></i>
                     </button>
                     <button id="theme-toggle" class="mini-btn" title="지도 테마 변경" style="display: none;">
@@ -155,15 +223,6 @@
                     </button>
                 </div>
 
-                <!-- AdSense Ad Unit -->
-                <div class="ad-container">
-                    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-8405706440402113"
-                        data-ad-slot="1234567890" data-ad-format="auto" data-full-width-responsive="true"></ins>
-                    <script>
-                        (adsbygoogle = window.adsbygoogle || []).push({});
-                    </script>
-                </div>
-
                 <button id="btn-takeoff" class="action-btn" disabled data-i18n="btn_takeoff">
                     비행 시작
                 </button>
@@ -172,6 +231,13 @@
             <!-- Step 2: In Flight Info -->
             <div class="control-panel hidden" id="panel-flight">
                 <div class="timer-display" id="flight-timer">00:00:00</div>
+                <!-- Interactive Buttons for Flight Mode -->
+                <button id="btn-follow-flight" class="map-corner-btn-bl flight-mode-map-btn-bl" title="비행기 추적">
+                    <i class="fa-solid fa-location-crosshairs"></i>
+                </button>
+                <button id="view-toggle-flight" class="map-corner-btn flight-mode-map-btn" title="지도/지구본 전환">
+                    <i class="fa-solid fa-map"></i>
+                </button>
                 <p class="flight-message" id="flight-message" data-i18n="msg_cruising">순항 고도 진입 중</p>
                 <button id="btn-abort" class="text-btn" data-i18n="btn_abort">비행 중단</button>
             </div>
@@ -198,6 +264,7 @@
         </div>
     </div>
 
+    <div id="toast-container" class="toast-container"></div>
     <script type="module" src="/app.js"></script>
 </body>
 
