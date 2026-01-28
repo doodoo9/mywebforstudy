@@ -100,14 +100,7 @@
             </div>
         </div>
 
-        <div class="bottom-controls">
-            <button id="theme-toggle" class="control-btn" title="지도 테마 변경" style="display: none;">
-                <i class="fa-solid fa-layer-group"></i>
-            </button>
-            <button id="view-toggle" class="control-btn" title="Toggle Map/Globe View">
-                <i class="fa-solid fa-map"></i>
-            </button>
-        </div>
+
 
         <div class="flight-controls" id="flight-controls">
             <!-- Step 1: Destination Selection Info -->
@@ -147,6 +140,19 @@
                     <div class="time-big">
                         <i class="fa-regular fa-clock"></i> <span id="real-time-display">--:--:--</span>
                     </div>
+                </div>
+
+                <!-- Integrated Flight Controls (Mini Bar) -->
+                <div id="integrated-controls" class="integrated-controls hidden">
+                    <button id="view-toggle" class="mini-btn" title="지도/지구본 전환">
+                        <i class="fa-solid fa-map"></i>
+                    </button>
+                    <button id="theme-toggle" class="mini-btn" title="지도 테마 변경" style="display: none;">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </button>
+                    <button id="btn-focus" class="mini-btn" title="비행기 위치로 이동">
+                        <i class="fa-solid fa-crosshairs"></i>
+                    </button>
                 </div>
 
                 <!-- AdSense Ad Unit -->
