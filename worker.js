@@ -1,4 +1,4 @@
-import { UniversalEdgeTTS } from 'edge-tts-universal';
+import { UniversalEdgeTTS_Isomorphic as UniversalEdgeTTS } from 'edge-tts-universal';
 
 export default {
     async fetch(request, env) {
