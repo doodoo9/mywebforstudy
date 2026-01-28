@@ -20,7 +20,13 @@ class CustomEdgeTTS {
             });
 
             if (!response.ok) {
-                throw new Error(`Server error: ${response.statusText}`);
+                const errorText = await response.text();
+                let errorMessage = response.statusText;
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    errorMessage = errorJson.error || errorMessage;
+                } catch (e) { }
+                throw new Error(`Server error: ${errorMessage}`);
             }
 
             const audioBlob = await response.blob();

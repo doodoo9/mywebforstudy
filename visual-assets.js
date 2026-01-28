@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import planeModelUrl from './B200_LARC_AIR_0824.glb?url';
 
 // --- 3D Plane Helper (Block Style) ---
 export function create3DPlane() {
@@ -87,7 +88,7 @@ export function loadPlaneModel() {
     const loader = new GLTFLoader();
     return new Promise((resolve, reject) => {
         loader.load(
-            './B200_LARC_AIR_0824.glb',
+            planeModelUrl,
             (gltf) => {
                 const model = gltf.scene;
 

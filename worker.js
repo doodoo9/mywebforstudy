@@ -5,35 +5,63 @@ export default {
         const url = new URL(request.url);
 
         // API Endpoint for TTS
-        if (url.pathname === '/tts' && request.method === 'POST') {
-            try {
-                const { text, voice } = await request.json();
-
-                if (!text) {
-                    return new Response('Text is required', { status: 400 });
-                }
-
-                console.log(`[Worker] TTS request for: ${text.substring(0, 50)}...`);
-                const tts = new UniversalEdgeTTS(text, voice || 'en-US-AriaNeural');
-                const result = await tts.synthesize();
-
-                return new Response(result.audio, {
+        if (url.pathname === '/tts') {
+            // CORS Preflight
+            if (request.method === 'OPTIONS') {
+                return new Response(null, {
                     headers: {
-                        'Content-Type': 'audio/mpeg',
-                        'Access-Control-Allow-Origin': '*'
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                        'Access-Control-Allow-Headers': 'Content-Type',
                     }
                 });
-            } catch (error) {
-                console.error('[Worker] TTS Error:', error);
-                return new Response(JSON.stringify({ error: error.message }), {
-                    status: 500,
-                    headers: { 'Content-Type': 'application/json' }
-                });
+            }
+
+            if (request.method === 'POST') {
+                try {
+                    const { text, voice } = await request.json();
+
+                    if (!text) {
+                        return new Response(JSON.stringify({ error: 'Text is required' }), {
+                            status: 400,
+                            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+                        });
+                    }
+
+                    console.log(`[Worker] Generating TTS: ${text.substring(0, 30)}...`);
+                    const tts = new UniversalEdgeTTS(text, voice || 'ko-KR-SunHiNeural');
+                    const result = await tts.synthesize();
+
+                    if (!result || !result.audio) {
+                        throw new Error("Failed to generate audio data");
+                    }
+
+                    const audioData = await result.audio.arrayBuffer();
+
+                    return new Response(audioData, {
+                        headers: {
+                            'Content-Type': 'audio/mpeg',
+                            'Access-Control-Allow-Origin': '*',
+                            'Cache-Control': 'public, max-age=3600'
+                        }
+                    });
+                } catch (error) {
+                    console.error('[Worker] TTS Error:', error.message);
+                    return new Response(JSON.stringify({
+                        error: error.message,
+                        details: "Edge TTS generation failed in Worker environment"
+                    }), {
+                        status: 500,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        }
+                    });
+                }
             }
         }
 
         // Serve Static Assets
-        // When using 'assets' in wrangler.jsonc, 'env.ASSETS' allows manual fetching
         if (env.ASSETS) {
             return env.ASSETS.fetch(request);
         }
