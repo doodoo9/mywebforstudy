@@ -1,9 +1,9 @@
 const SERVER_URL = "/tts";
 
-class CustomEdgeTTS {
-    constructor(text, voice) {
+class CustomGoogleTTS {
+    constructor(text, lang) {
         this.text = text;
-        this.voice = voice;
+        this.lang = lang;
     }
 
     async synthesize() {
@@ -15,62 +15,34 @@ class CustomEdgeTTS {
                 },
                 body: JSON.stringify({
                     text: this.text,
-                    voice: this.voice
+                    lang: this.lang
                 })
             });
 
             if (!response.ok) {
                 const errorText = await response.text();
-                let errorMessage = response.statusText;
-                try {
-                    const errorJson = JSON.parse(errorText);
-                    errorMessage = errorJson.error || errorMessage;
-                } catch (e) { }
-                throw new Error(`Server error: ${errorMessage}`);
+                throw new Error(`Server error: ${response.status} - ${errorText}`);
             }
 
             const audioBlob = await response.blob();
             return { audio: audioBlob };
 
         } catch (err) {
-            console.error("Python TTS Server Error:", err);
+            console.error("TTS Server Error:", err);
             throw err;
         }
     }
 }
 
-// Std Script format (No Modules)
 class AudioManager {
     constructor() {
         console.log("AudioManager: Initializing...");
         this.ctx = null;
         this.masterGain = null;
         this.engineGain = null;
-        this.voice = window.speechSynthesis;
         this.noiseNode = null;
         this.lang = 'kr';
-        this.selectedVoiceKr = 'ko-KR-SunHiNeural';
-        this.selectedVoiceEn = 'en-US-AriaNeural';
-        this.isVoiceLoaded = false;
         this.currentAudio = null; // Track current Audio element
-        this.currentUtterance = null; // Track current speech synthesis
-
-        // Using CustomEdgeTTS for better reliability
-        this.edgeTtsSupported = true;
-        console.log("AudioManager: CustomEdgeTTS ready");
-
-        // Try to pre-load voices
-        if (this.voice) {
-            this.voice.onvoiceschanged = () => {
-                const voices = this.voice.getVoices();
-                if (voices.length > 0) {
-                    this.isVoiceLoaded = true;
-                    console.log(`[AudioManager] ${voices.length} voices loaded.`);
-                }
-            };
-            // Trigger initial load check
-            this.voice.getVoices();
-        }
     }
 
     setLanguage(lang) {
@@ -211,20 +183,44 @@ class AudioManager {
         };
     }
 
+    announceTakeoff(airport, onTextDisplay, onComplete) {
+        const scripts = this.getTakeoffScripts(airport);
+
+        this.playChime(() => {
+            // Screen Text: Follows app language setting
+            const displayText = (this.lang === 'kr') ? scripts.kr : scripts.en;
+            if (onTextDisplay) onTextDisplay(displayText);
+
+            // Audio: ALWAYS English (Simulation Standard)
+            this.speak(scripts.en, 'en', onComplete);
+        });
+    }
+
+    announceLandingWithDest(airport, onTextDisplay, onComplete) {
+        const scripts = this.getLandingScripts(airport);
+
+        this.playChime(() => {
+            const displayText = (this.lang === 'kr') ? scripts.kr : scripts.en;
+            if (onTextDisplay) onTextDisplay(displayText);
+            this.speak(scripts.en, 'en', onComplete);
+        });
+    }
+
     async speak(text, lang, callback) {
-        // Safe callback wrapper to ensure it runs exactly once
+        // Safe callback wrapper
         let callbackCalled = false;
         const safeCallback = () => {
+            if (this.currentCallback === safeCallback) {
+                this.currentCallback = null;
+            }
             if (!callbackCalled && callback) {
                 callbackCalled = true;
                 callback();
             }
         };
 
-        // Safety timeout: if audio hangs for 30s, force callback to proceed
-        setTimeout(safeCallback, 30000);
+        this.currentCallback = safeCallback;
 
-        // HYPER-STRICT: Ensure text is a primitive string
         let speakText = String(text || "").trim();
         if (speakText.length === 0) {
             safeCallback();
@@ -233,144 +229,44 @@ class AudioManager {
 
         console.log(`[AudioManager] Speaking (${lang}): "${speakText}"`);
 
-        // Use CustomEdgeTTS for reliability
-        if (this.edgeTtsSupported) {
-            try {
-                const voice = lang === 'kr' ? this.selectedVoiceKr : this.selectedVoiceEn;
-                const tts = new CustomEdgeTTS(speakText, voice);
+        // Stop previous audio
+        this.stopSpeech();
 
-                const synthesisPromise = tts.synthesize();
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error("EdgeTTS Timeout")), 20000)
-                );
+        // Use CustomGoogleTTS via Worker Proxy
+        try {
+            const tts = new CustomGoogleTTS(speakText, lang);
+            const result = await tts.synthesize();
 
-                const result = await Promise.race([synthesisPromise, timeoutPromise]);
-                const audioBlob = result?.audio;
+            if (result.audio) {
+                const blobUrl = URL.createObjectURL(result.audio);
+                const audio = new Audio(blobUrl);
+                this.currentAudio = audio;
 
-                if (audioBlob) {
-                    const url = URL.createObjectURL(audioBlob);
-                    const audio = new Audio(url);
-                    this.currentAudio = audio;
+                audio.onended = () => {
+                    URL.revokeObjectURL(blobUrl);
+                    this.currentAudio = null;
+                    safeCallback();
+                };
 
-                    await new Promise((resolve) => {
-                        audio.onended = () => {
-                            URL.revokeObjectURL(url);
-                            this.currentAudio = null;
-                            safeCallback();
-                            resolve();
-                        };
-                        audio.onerror = () => {
-                            URL.revokeObjectURL(url);
-                            this.currentAudio = null;
-                            this.speakFallback(speakText, lang, safeCallback);
-                            resolve();
-                        };
-                        audio.play().catch(e => {
-                            console.error("[AudioManager] Audio play failed:", e);
-                            this.currentAudio = null;
-                            this.speakFallback(speakText, lang, safeCallback);
-                            resolve();
-                        });
-                    });
-                    return; // EXIT after successful Edge TTS play
-                }
-            } catch (e) {
-                console.warn("[AudioManager] CustomEdgeTTS failed or timed out, using fallback.", e);
-            }
-        }
+                audio.onerror = (e) => {
+                    console.error("Audio Playback Error:", e);
+                    safeCallback();
+                };
 
-        // Only reached if Edge TTS is not supported or fails
-        this.speakFallback(speakText, lang, safeCallback);
-    }
-
-    speakFallback(text, lang, callback) {
-        if (!this.voice) {
-            if (callback) callback();
-            return;
-        }
-
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 1.0;
-
-        const setVoiceAndSpeak = () => {
-            const voices = this.voice.getVoices();
-            let voiceMatch = null;
-
-            if (lang === 'kr') {
-                utterance.lang = 'ko-KR';
-                // Try to find a voice that matches our selected preference first
-                voiceMatch = voices.find(v => v.name.includes(this.selectedVoiceKr.split('-').pop())) ||
-                    voices.find(v => v.lang.includes('ko') && (v.name.includes('Neural') || v.name.includes('Google'))) ||
-                    voices.find(v => v.lang.includes('ko'));
-            } else {
-                utterance.lang = 'en-US';
-                voiceMatch = voices.find(v => v.name.includes(this.selectedVoiceEn.split('-').pop())) ||
-                    voices.find(v => v.lang.includes('en') && (v.name.includes('Neural') || v.name.includes('Google'))) ||
-                    voices.find(v => v.lang.includes('en'));
-            }
-
-            if (voiceMatch) utterance.voice = voiceMatch;
-
-            this.currentUtterance = utterance;
-            utterance.onend = () => {
-                this.currentUtterance = null;
-                if (callback) callback();
-            };
-            utterance.onerror = () => {
-                this.currentUtterance = null;
-                if (callback) callback();
-            };
-
-            this.voice.cancel();
-            this.voice.speak(utterance);
-        };
-
-        if (this.voice.getVoices().length === 0) {
-            this.voice.onvoiceschanged = () => {
-                setVoiceAndSpeak();
-                this.voice.onvoiceschanged = null;
-            };
-        } else {
-            setVoiceAndSpeak();
-        }
-    }
-
-    announceTakeoff(airport, onTextDisplay, onComplete) {
-        const scripts = this.getTakeoffScripts(airport);
-
-        this.playChime(() => {
-            if (this.lang === 'kr') {
-                if (onTextDisplay) onTextDisplay(scripts.kr);
-                this.speak(scripts.kr, 'kr', () => {
-                    setTimeout(() => {
-                        if (onTextDisplay) onTextDisplay(scripts.en);
-                        this.speak(scripts.en, 'en', onComplete);
-                    }, 500);
+                audio.play().catch(e => {
+                    console.warn("Autoplay blocked or failed:", e);
+                    safeCallback();
                 });
             } else {
-                if (onTextDisplay) onTextDisplay(scripts.en);
-                this.speak(scripts.en, 'en', onComplete);
+                throw new Error("No audio returned");
             }
-        });
-    }
-
-    announceLandingWithDest(airport, onTextDisplay, onComplete) {
-        const scripts = this.getLandingScripts(airport);
-
-        this.playChime(() => {
-            if (this.lang === 'kr') {
-                if (onTextDisplay) onTextDisplay(scripts.kr);
-                this.speak(scripts.kr, 'kr', () => {
-                    setTimeout(() => {
-                        if (onTextDisplay) onTextDisplay(scripts.en);
-                        this.speak(scripts.en, 'en', onComplete);
-                    }, 500);
-                });
-            } else {
-                if (onTextDisplay) onTextDisplay(scripts.en);
-                this.speak(scripts.en, 'en', onComplete);
-            }
-        });
+        } catch (e) {
+            console.error("TTS Failed:", e);
+            // Fallback? User said NO native. So we just stay silent or maybe minimal alert?
+            // "기본 tts는 쓰면 안돼고" -> Do not use basic TTS.
+            // We just fail gracefully.
+            safeCallback();
+        }
     }
 
     stopSpeech() {
@@ -378,19 +274,17 @@ class AudioManager {
         if (this.currentAudio) {
             this.currentAudio.pause();
             this.currentAudio.currentTime = 0;
-            if (this.currentAudio.onended) this.currentAudio.onended();
             this.currentAudio = null;
         }
-        if (this.voice && this.voice.speaking) {
-            this.voice.cancel();
-            if (this.currentUtterance && this.currentUtterance.onend) {
-                this.currentUtterance.onend();
-            }
-            this.currentUtterance = null;
+
+        // Trigger callback to ensure flow continues (e.g. Flight starts on Skip)
+        if (this.currentCallback) {
+            const cb = this.currentCallback;
+            this.currentCallback = null;
+            cb();
         }
     }
 }
 
-// Explicit Global Export & Named Export for ESM
 export { AudioManager };
 window.AudioManager = AudioManager;

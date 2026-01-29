@@ -46,8 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
         enterAppArea: document.getElementById('enter-app-area'),
         modalTitle: document.getElementById('modal-title'),
         modalDesc: document.getElementById('modal-desc'),
-        voiceSelectKr: document.getElementById('voice-kr'),
-        voiceSelectEn: document.getElementById('voice-en'),
+
         viewToggle: document.getElementById('view-toggle'),
         viewToggleSetup: document.getElementById('view-toggle-setup'),
         viewToggleFlight: document.getElementById('view-toggle-flight'),
@@ -75,7 +74,23 @@ document.addEventListener('DOMContentLoaded', () => {
         modalChanges: document.getElementById('modal-changes'),
         changelogContent: document.getElementById('changelog-content'),
         aboutContent: document.getElementById('about-content'),
-        toastContainer: document.getElementById('toast-container')
+        toastContainer: document.getElementById('toast-container'),
+        menuChanges: document.getElementById('menu-changes'),
+        menuNotices: document.getElementById('menu-notices'),
+        menuLogin: document.getElementById('menu-login'),
+        drawerLangToggle: document.getElementById('drawer-lang-toggle'),
+        modalAbout: document.getElementById('modal-about'),
+        modalChanges: document.getElementById('modal-changes'),
+        modalNotices: document.getElementById('modal-notices'),
+        modalAuthLogin: document.getElementById('modal-auth-login'),
+        modalAuthRegister: document.getElementById('modal-auth-register'),
+        modalAuthFindId: document.getElementById('modal-auth-find-id'),
+        modalAuthFindPw: document.getElementById('modal-auth-find-pw'),
+        changelogContent: document.getElementById('changelog-content'),
+        aboutContent: document.getElementById('about-content'),
+        noticeContent: document.getElementById('notice-content'),
+        toastContainer: document.getElementById('toast-container'),
+        timerDisplay: document.querySelector('.timer-display')
     };
 
 
@@ -120,9 +135,39 @@ document.addEventListener('DOMContentLoaded', () => {
             label_est_time: "예상 비행 시간",
             menu_about: "소개",
             menu_changes: "변경 기록",
+            menu_notices: "공지사항",
+            menu_login: "로그인/회원가입",
+            about_desc: "skyfocus.cloud는 공부하는 동안 여행하는 기분을 느낄 수 있는 시뮬레이션 서비스입니다.",
+            menu_notices: "공지사항",
+            menu_login: "로그인/회원가입",
             about_desc: "skyfocus.cloud는 공부하는 동안 여행하는 기분을 느낄 수 있는 시뮬레이션 서비스입니다.",
             msg_following: "비행기를 따라갑니다",
-            msg_follow_stop: "추적을 중지합니다"
+            msg_follow_stop: "추적을 중지합니다",
+            auth_login_title: "로그인",
+            auth_id: "아이디",
+            auth_pw: "비밀번호",
+            auth_name: "이름",
+            auth_email: "이메일",
+            auth_btn_login: "로그인",
+            auth_link_signup: "회원가입",
+            auth_link_find_id: "아이디 찾기",
+            auth_link_find_pw: "비밀번호 찾기",
+            auth_reg_title: "회원가입",
+            auth_btn_verify: "인증코드 발송",
+            auth_btn_check: "확인",
+            auth_code: "인증코드",
+            auth_pw_confirm: "비밀번호 확인",
+            auth_btn_create: "계정 생성",
+            auth_find_id_title: "아이디 찾기",
+            auth_find_pw_title: "비밀번호 재설정",
+            auth_btn_reset_request: "재설정 코드 발송",
+            auth_new_pw: "새 비밀번호",
+            auth_btn_change_pw: "비밀번호 변경",
+            ph_id: "아이디를 입력하세요",
+            ph_pw: "비밀번호를 입력하세요",
+            ph_name: "이름을 입력하세요",
+            ph_email: "이메일을 입력하세요",
+            ph_code: "인증코드 입력"
         },
         en: {
             status_ready: "Ready for Takeoff",
@@ -144,9 +189,36 @@ document.addEventListener('DOMContentLoaded', () => {
             label_est_time: "Estimated Flight Time",
             menu_about: "About",
             menu_changes: "Changes",
+            menu_notices: "Notices",
+            menu_login: "Login / Sign Up",
             about_desc: "skyfocus.cloud is a simulation service that lets you feel like you're traveling while studying.",
             msg_following: "Following the plane",
-            msg_follow_stop: "Tracking disabled"
+            msg_follow_stop: "Tracking disabled",
+            auth_login_title: "Login",
+            auth_id: "ID",
+            auth_pw: "Password",
+            auth_name: "Name",
+            auth_email: "Email",
+            auth_btn_login: "Login",
+            auth_link_signup: "Sign Up",
+            auth_link_find_id: "Forgot ID?",
+            auth_link_find_pw: "Forgot Password?",
+            auth_reg_title: "Sign Up",
+            auth_btn_verify: "Verify Email",
+            auth_btn_check: "Check",
+            auth_code: "Verification Code",
+            auth_pw_confirm: "Confirm Password",
+            auth_btn_create: "Create Account",
+            auth_find_id_title: "Find ID",
+            auth_find_pw_title: "Reset Password",
+            auth_btn_reset_request: "Send Reset Code",
+            auth_new_pw: "New Password",
+            auth_btn_change_pw: "Change Password",
+            ph_id: "Enter ID",
+            ph_pw: "Enter Password",
+            ph_name: "Enter Name",
+            ph_email: "Enter Email",
+            ph_code: "Enter Code"
         }
     };
 
@@ -161,34 +233,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     } catch (e) { console.error("Audio Manager Error", e); }
 
-    // --- Voice Logic ---
-    function updateVoiceSelection() {
-        if (!audio) return;
-
-        // Ensure elements exist
-        if (!ui.voiceSelectKr || !ui.voiceSelectEn) return;
-
-        if (currentLang === 'kr') {
-            audio.selectedVoiceKr = ui.voiceSelectKr.value;
-            ui.voiceSelectKr.style.display = 'inline-block';
-            ui.voiceSelectEn.style.display = 'none';
-        } else {
-            audio.selectedVoiceEn = ui.voiceSelectEn.value;
-            ui.voiceSelectKr.style.display = 'none';
-            ui.voiceSelectEn.style.display = 'inline-block';
+    // TTS Skip Controls
+    if (audio) {
+        if (ui.realFlightInfo) {
+            ui.realFlightInfo.style.cursor = 'pointer';
+            ui.realFlightInfo.title = "클릭하여 음성 안내 건너뛰기";
+            ui.realFlightInfo.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+                audio.stopSpeech();
+            });
+        }
+        if (ui.timerDisplay) {
+            ui.timerDisplay.style.cursor = 'pointer';
+            ui.timerDisplay.title = "클릭하여 음성 안내 건너뛰기";
+            ui.timerDisplay.addEventListener('click', () => audio.stopSpeech());
         }
     }
 
-    if (ui.voiceSelectKr) {
-        ui.voiceSelectKr.addEventListener('change', () => {
-            if (audio) audio.selectedVoiceKr = ui.voiceSelectKr.value;
-        });
-    }
-    if (ui.voiceSelectEn) {
-        ui.voiceSelectEn.addEventListener('change', () => {
-            if (audio) audio.selectedVoiceEn = ui.voiceSelectEn.value;
-        });
-    }
+    // --- Voice Logic ---
+
 
     // --- Initialization & Listeners ---
     // Initial language UI update is now handled after loading
@@ -272,6 +335,59 @@ document.addEventListener('DOMContentLoaded', () => {
                 toggleMenu(false);
             });
         }
+
+        if (ui.menuNotices) {
+            ui.menuNotices.addEventListener('click', () => {
+                fetch('notices.txt')
+                    .then(res => res.text())
+                    .then(text => {
+                        ui.noticeContent.innerHTML = parseNotices(text);
+                        // Accordion Logic
+                        document.querySelectorAll('.notice-title').forEach(title => {
+                            title.addEventListener('click', () => {
+                                title.parentElement.classList.toggle('active');
+                            });
+                        });
+                    })
+                    .catch(err => {
+                        ui.noticeContent.innerText = "Failed to load notices.";
+                    });
+
+                ui.modalNotices.classList.remove('hidden');
+                toggleMenu(false);
+            });
+        }
+
+        // --- AUTH MENU LISTENER ---
+        if (ui.menuLogin) {
+            ui.menuLogin.addEventListener('click', () => {
+                ui.modalAuthLogin.classList.remove('hidden');
+                toggleMenu(false);
+            });
+        }
+
+        // --- AUTH MODAL NAVIGATION ---
+        const openAuthModal = (modalId) => {
+            // Close all auth modals first
+            [ui.modalAuthLogin, ui.modalAuthRegister, ui.modalAuthFindId, ui.modalAuthFindPw].forEach(m => {
+                if (m) m.classList.add('hidden');
+            });
+            const target = document.getElementById(modalId);
+            if (target) target.classList.remove('hidden');
+        };
+
+        if (document.getElementById('link-to-register')) {
+            document.getElementById('link-to-register').addEventListener('click', () => openAuthModal('modal-auth-register'));
+        }
+        if (document.getElementById('link-find-id')) {
+            document.getElementById('link-find-id').addEventListener('click', () => openAuthModal('modal-auth-find-id'));
+        }
+        if (document.getElementById('link-find-pw')) {
+            document.getElementById('link-find-pw').addEventListener('click', () => openAuthModal('modal-auth-find-pw'));
+        }
+
+        // --- AUTH SUBMISSION --
+        setupAuthListeners();
 
         // Modal Closing
         document.querySelectorAll('.close-modal-btn').forEach(btn => {
@@ -387,6 +503,73 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         html += '</ul>';
+        return html;
+    }
+
+    function parseNotices(text) {
+        // Regex to split by tags, capturing the tag itself
+        const regex = /(<제목>|<고정>)/;
+        const parts = text.split(regex);
+
+        let notices = [];
+        let currentTag = null;
+
+        // parts array will look like: ["before text", "<고정>", " title\nbody...", "<제목>", " title\nbody..."]
+        parts.forEach(part => {
+            if (!part.trim() && !['<제목>', '<고정>'].includes(part)) return;
+
+            if (part === '<제목>' || part === '<고정>') {
+                currentTag = part;
+            } else if (currentTag) {
+                // This 'part' is the content for the currentTag
+                // e.g., " Title \n Body..."
+                const firstLineEnd = part.indexOf('\n');
+                let title = "";
+                let body = "";
+
+                if (firstLineEnd === -1) {
+                    title = part.trim();
+                } else {
+                    title = part.substring(0, firstLineEnd).trim();
+                    body = part.substring(firstLineEnd).trim().replace(/\n/g, '<br>');
+                }
+
+                if (title) {
+                    notices.push({
+                        title,
+                        body,
+                        isPinned: currentTag === '<고정>'
+                    });
+                }
+                currentTag = null; // Reset
+            }
+        });
+
+        // Sort: Pinned first
+        notices.sort((a, b) => {
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+            return 0;
+        });
+
+        // Render
+        let html = '<div class="notice-list">';
+        notices.forEach(notice => {
+            const pinIcon = notice.isPinned ? '<i class="fa-solid fa-thumbtack" style="margin-right:8px; color:var(--primary);"></i> ' : '';
+            const activeClass = notice.isPinned ? 'pinned' : '';
+            const titleStyle = notice.isPinned ? 'font-weight:900;' : '';
+
+            html += `
+            <div class="notice-item ${activeClass}">
+                <div class="notice-title" style="${titleStyle}">
+                    <span>${pinIcon}${notice.title}</span>
+                </div>
+                <div class="notice-content">${notice.body}</div>
+            </div>
+        `;
+        });
+
+        html += '</div>';
         return html;
     }
 
@@ -1182,7 +1365,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Fix Direction: The plane was rotated 180 degrees.
                     // ThreeJS Z rotation is CCW.
-                    rotationQ.setFromAxisAngle(new THREE.Vector3(0, 0, 1), -angle + Math.PI / 2);
+                    // User reported backwards, so adding Math.PI to flip it.
+                    rotationQ.setFromAxisAngle(new THREE.Vector3(0, 0, 1), -angle + Math.PI / 2 + Math.PI);
 
                     const tiltQ = new THREE.Quaternion();
                     // Adjust tilt to be more consistent with globe orientation (belly to scene)
@@ -1320,7 +1504,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (controls) {
-            controls.autoRotate = true;
+            controls.autoRotate = false;
         }
     }
 
@@ -1377,13 +1561,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Placeholder Localization
+        document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+            const key = el.getAttribute('data-i18n-ph');
+            if (translations[currentLang][key]) {
+                el.placeholder = translations[currentLang][key];
+            }
+        });
+
         if (ui.modalTitle) ui.modalTitle.textContent = t('modal_title');
         if (ui.modalDesc) ui.modalDesc.textContent = t('modal_desc');
         if (ui.initBtn) ui.initBtn.textContent = t('btn_enter');
-
-        updateVoiceSelection();
     }
-
     const loadStatus = {
         model: false,
         textures: false,
@@ -1590,4 +1779,170 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Kickoff ---
     initGlobe();
     animate();
+    // --- AUTH LOGIC ---
+    function setupAuthListeners() {
+        // --- LOGIN ---
+        document.getElementById('btn-login-submit')?.addEventListener('click', async () => {
+            const id = document.getElementById('login-id').value;
+            const pw = document.getElementById('login-pw').value;
+            if (!id || !pw) return showToast("Please enter ID and Password");
+
+            try {
+                const res = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: id, password: pw })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(`Welcome back, ${data.name}!`);
+                    ui.modalAuthLogin.classList.add('hidden');
+                    // Store token or state if needed (not fully spec'd, assuming sessionless or handled by user)
+                    // For now just UI feedback
+                } else {
+                    showToast("Login Failed: " + (data.error || "Unknown"));
+                }
+            } catch (e) {
+                showToast("Login Error: " + e.message);
+            }
+        });
+
+        // --- REGISTER ---
+        let regCode = null; // Verified client-side for now or just UI flow
+        // Step 1: Verify Email
+        document.getElementById('btn-reg-verify-email')?.addEventListener('click', async () => {
+            const email = document.getElementById('reg-email').value;
+            if (!email) return showToast("Enter email");
+
+            try {
+                const res = await fetch('/auth/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, type: 'register' })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast("Verification code sent to console (simulated)");
+                    document.getElementById('reg-verification-area').classList.remove('hidden');
+                } else {
+                    showToast("Error: " + data.error);
+                }
+            } catch (e) { showToast("Error: " + e.message); }
+        });
+
+        // Step 1b: Confirm Code
+        document.getElementById('btn-reg-check-code')?.addEventListener('click', () => {
+            const code = document.getElementById('reg-code').value;
+            // In a real app we'd verify with server again or just trust the next step includes it
+            if (code) {
+                showToast("Verified!");
+                document.getElementById('register-step-1').classList.add('hidden');
+                document.getElementById('register-step-2').classList.remove('hidden');
+                regCode = code;
+            }
+        });
+
+        // Step 2: Finalize
+        document.getElementById('btn-reg-submit')?.addEventListener('click', async () => {
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const id = document.getElementById('reg-id').value;
+            const pw = document.getElementById('reg-pw').value;
+            const pw2 = document.getElementById('reg-pw-confirm').value;
+
+            if (pw !== pw2) return showToast("Passwords do not match");
+
+            try {
+                const res = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: id,
+                        password: pw,
+                        name: name,
+                        email: email,
+                        code: regCode
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast("Account Created! Please Login.");
+                    openAuthModal('modal-auth-login');
+                } else {
+                    showToast("Register Failed: " + data.error);
+                }
+            } catch (e) { showToast("Error: " + e.message); }
+        });
+
+        // --- FIND ID ---
+        document.getElementById('btn-find-id-submit')?.addEventListener('click', async () => {
+            const name = document.getElementById('find-id-name').value;
+            const email = document.getElementById('find-id-email').value;
+
+            try {
+                const res = await fetch('/auth/find-id', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('find-id-result').classList.remove('hidden');
+                    document.getElementById('found-id-display').innerText = data.userId;
+                } else {
+                    showToast("Not Found: " + data.error);
+                }
+            } catch (e) { showToast("Error: " + e.message); }
+        });
+
+        // --- FIND PW ---
+        let resetCode = null;
+        document.getElementById('btn-reset-request')?.addEventListener('click', async () => {
+            const id = document.getElementById('reset-id').value;
+            const email = document.getElementById('reset-email').value;
+
+            try {
+                const res = await fetch('/auth/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: id, email, type: 'reset' })
+                });
+                if (res.ok) {
+                    showToast("Code sent to console");
+                    document.getElementById('reset-step-1').classList.add('hidden');
+                    document.getElementById('reset-step-2').classList.remove('hidden');
+                } else {
+                    showToast("Error");
+                }
+            } catch (e) { showToast(e.message); }
+        });
+
+        document.getElementById('btn-reset-check-code')?.addEventListener('click', () => {
+            const code = document.getElementById('reset-code').value;
+            if (code) {
+                resetCode = code;
+                document.getElementById('reset-step-2').classList.add('hidden');
+                document.getElementById('reset-step-3').classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('btn-reset-submit')?.addEventListener('click', async () => {
+            const newPw = document.getElementById('reset-new-pw').value;
+            const id = document.getElementById('reset-id').value;
+
+            try {
+                const res = await fetch('/auth/find-pw', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: id, newPassword: newPw, code: resetCode })
+                });
+                if (res.ok) {
+                    showToast("Password Reset! Please Login.");
+                    openAuthModal('modal-auth-login');
+                } else {
+                    showToast("Failed");
+                }
+            } catch (e) { showToast(e.message); }
+        });
+    }
 });
