@@ -1,18 +1,19 @@
 {
-    "name": "mywebforstudy",
-    "compatibility_date": "2026-01-27",
-    "compatibility_flags": [
-        "nodejs_compat"
-    ],
-    "main": "worker.js",
-    "assets": {
-        "directory": "./dist"
-    },
-    // Run `npx wrangler kv:namespace create USERS` and paste the ID below
-    "kv_namespaces": [
-        {
-            "binding": "USERS",
-            "id": "YOUR_KV_ID_HERE"
-        }
-    ]
+	"name": "mywebforstudy",
+	"compatibility_date": "2026-01-27",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"main": "worker.js",
+	"assets": {
+		"directory": "./dist"
+	},
+	// Run `npx wrangler kv:namespace create USERS` and paste the ID below
+	"kv_namespaces": [
+		{
+			"binding": "JAE_H_JO",
+			"id": "ce9f64724f9f4a76a7556546fdb57091",
+			"remote": true
+		}
+	]
 }
