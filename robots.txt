@@ -1,0 +1,40 @@
+# 1. 구글 광고 및 애드센스 봇 허용 (최상단 배치)
+User-agent: Mediapartners-Google
+Allow: /
+
+User-agent: Google-Display-Ads-Bot
+Allow: /
+
+# BEGIN Cloudflare Managed content
+
+# 2. 일반 검색 허용 및 AI 학습 거부
+User-agent: *
+Content-Signal: search=yes,ai-train=no
+Allow: /
+
+# 3. 개별 AI 크롤러 차단 유지
+User-agent: Amazonbot
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: GPTBot
+Disallow: /
+
+User-agent: meta-externalagent
+Disallow: /
+
+# END Cloudflare Managed Content
