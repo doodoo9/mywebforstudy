@@ -252,7 +252,7 @@ class AudioManager {
                     const audio = new Audio(url);
                     this.currentAudio = audio;
 
-                    return new Promise((resolve) => {
+                    await new Promise((resolve) => {
                         audio.onended = () => {
                             URL.revokeObjectURL(url);
                             this.currentAudio = null;
@@ -272,12 +272,14 @@ class AudioManager {
                             resolve();
                         });
                     });
+                    return; // EXIT after successful Edge TTS play
                 }
             } catch (e) {
                 console.warn("[AudioManager] CustomEdgeTTS failed or timed out, using fallback.", e);
             }
         }
 
+        // Only reached if Edge TTS is not supported or fails
         this.speakFallback(speakText, lang, safeCallback);
     }
 

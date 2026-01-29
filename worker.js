@@ -46,10 +46,39 @@ export default {
                         }
                     });
                 } catch (error) {
-                    console.error('[Worker] TTS Error:', error.message);
+                    console.error('[Worker] Edge TTS Error:', error.message);
+
+                    // --- Secondary Fallback: Google Translate TTS ---
+                    // This is much more reliable in Cloudflare environments although slightly lower quality
+                    try {
+                        console.log(`[Worker] Attempting Google TTS fallback...`);
+                        const lang = (voice && voice.startsWith('ko')) ? 'ko' : 'en';
+                        const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${lang}&client=tw-ob`;
+
+                        const googleResponse = await fetch(googleTtsUrl, {
+                            headers: {
+                                'Referer': 'http://translate.google.com/',
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                            }
+                        });
+
+                        if (googleResponse.ok) {
+                            const audioData = await googleResponse.arrayBuffer();
+                            return new Response(audioData, {
+                                headers: {
+                                    'Content-Type': 'audio/mpeg',
+                                    'Access-Control-Allow-Origin': '*',
+                                    'X-TTS-Provider': 'Google'
+                                }
+                            });
+                        }
+                    } catch (fallbackError) {
+                        console.error('[Worker] Google TTS Fallback failed:', fallbackError.message);
+                    }
+
                     return new Response(JSON.stringify({
                         error: error.message,
-                        details: "Edge TTS generation failed in Worker environment"
+                        details: "Edge TTS failed and Google fallback also failed."
                     }), {
                         status: 500,
                         headers: {

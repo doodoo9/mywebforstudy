@@ -1180,11 +1180,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Let's try matching the screen angle directly, observing coordinate system.
                     // Three.js Z rotation is CCW. Screen Y is Down (so angles are "inverted" visually relative to cartesian?)
 
-                    // Fix Direction: Apply -90 deg (PI/2) offset because plane points Up (North) by default
-                    // We want: Angle 0 (Right) -> Rotate Plane -90 (CCW) relative to world? Or +90 CW.
+                    // Fix Direction: The plane was rotated 180 degrees.
                     // ThreeJS Z rotation is CCW.
-                    // Based on analysis: theta = -angle - PI/2
-                    rotationQ.setFromAxisAngle(new THREE.Vector3(0, 0, 1), -angle - Math.PI / 2);
+                    rotationQ.setFromAxisAngle(new THREE.Vector3(0, 0, 1), -angle + Math.PI / 2);
 
                     const tiltQ = new THREE.Quaternion();
                     // Adjust tilt to be more consistent with globe orientation (belly to scene)
